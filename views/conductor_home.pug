@@ -1,0 +1,116 @@
+extends partials/layout
+
+block content
+    div(class="p-4")
+        button(type="button" class="bg-blue-700 text-white font-bold rounded-md p-2")&attributes({ 'data-button-action': 'toggleAll' }).
+            Toggle All
+        div(class="grid grid-rows-3 grid-cols-1 md:grid-rows-1 md:grid-cols-3 gap-4 mt-4")
+            each val in locals.endpoints
+                div(class="wemo-control p-4 border border-gray-700 rounded-md")&attributes({ 'data-ip': val[0], 'data-port': val[1] })
+                    h1(class="text-2xl font-bold")= val[2]
+                    p(class="wemo-state text-xl font-medium") ...
+                    button(type="button", class="wemo-toggle bg-blue-700 px-4 py-2 text-white font-bold rounded-md mt-4") Toggle
+    script.
+        const toast = new Notyf()
+        const toggleAllButton = document.querySelector('button[data-button-action=toggleAll]')
+        const toggleSwitchButton = document.querySelectorAll('button.wemo-toggle')
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const wemos = document.querySelectorAll('div.wemo-control')
+
+            const switches = []
+
+            for (const el of wemos) {
+                const ip = el.dataset.ip
+                const port = el.dataset.port
+
+                switches.push({ ip, port })
+            }
+
+            const { data } = await axios.post('/api/wemo-action', {
+                action: 'getStatesBulk',
+                switches
+            })
+
+            if (data.success) {
+                data.data.forEach(e => {
+                    const ip = e.value.ip
+
+                    document.querySelector(`div.wemo-control[data-ip="${ip}"] p.wemo-state`)
+                        .innerText = ` ${e.value.state ? 'ON' : 'OFF'}`
+                })
+            }
+        })
+
+        if (toggleAllButton) {
+            toggleAllButton.addEventListener('click', async e => {
+                e.preventDefault()
+
+                // Get an array of all wemo controls.
+                const wemos = document.querySelectorAll('div.wemo-control')
+
+                let body = {
+                    action: 'toggleSwitchesBulk',
+                    switches: []
+                }
+
+                wemos.forEach(wemo => {
+                    body.switches.push({
+                        ip: wemo.dataset.ip,
+                        port: wemo.dataset.port
+                    })
+                })
+
+                const { data } = await axios.post('/api/wemo-action', body)
+
+                if (data.success) {
+                    const allToggled = data.data.every(e => e.status === "fulfilled")
+
+                    if (allToggled) {
+                        toast.success('All switches were toggled successfully.')
+                    } else {
+                        toast.warning('Not all switches were toggled successfully.')
+                    }
+                }
+            })
+        } else {
+            console.log('toggleAllButton: button not found!')
+        }
+
+        if (toggleSwitchButton.length > 0) {
+            async function toggleSwitch(e) {
+                e.preventDefault()
+
+                const element = e.target
+
+                const body = {
+                    action: 'toggleSwitch',
+                    switch: {
+                        ip: element.parentElement.dataset.ip,
+                        port: element.parentElement.dataset.port
+                    }
+                }
+
+                const { data } = await axios.post('/api/wemo-action', body)
+
+                if (data.success) {
+                    let newState;
+                    const lastRegisteredState = e.target.parentElement.querySelector('p.wemo-state')
+                        .innerText
+
+                    console.log(lastRegisteredState)
+
+                    if (lastRegisteredState === "ON") {
+                        newState = "OFF"
+                    } else newState = "ON"
+
+                    e.target.parentElement.querySelector('p')
+                        .innerText = e.target.parentElement.querySelector('p.wemo-state')
+                        .innerText.replace(lastRegisteredState, newState)
+
+                    toast.success(`${e.target.parentElement.querySelector('h1').innerText} successfully ${newState === 'ON' ? 'turned on' : 'turned off'}.`)
+                }
+            }
+
+            toggleSwitchButton.forEach(el => el.addEventListener('click', toggleSwitch))
+        }
