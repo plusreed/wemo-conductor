@@ -2,11 +2,19 @@ const express = require('express')
 const doAction = require('./switchActions')
 const switches = require('./switches.json')
 const { getFriendlyName } = require('./soapbuilder')
+const { normalize, join } = require('path')
+const cors = require('cors')
 const app = express()
 
 app.set('view engine', 'pug')
 
+const frontBuild = normalize(join(__dirname, './frontend'))
+
 app.use(express.json())
+app.use(express.static(frontBuild))
+app.use(cors())
+
+app.use('/api/v1', require('./react-apis'))
 
 app.get('/', async (req, res) => {
     res.render('conductor_home', {
@@ -29,46 +37,10 @@ app.post('/api/wemo-action', async (req, res) => {
     const { httpStatus, body: httpBody } = await doAction(body)
 
     res.status(httpStatus).send(httpBody)
+})
 
-    // Action provided.
-    // TODO: Move this out to a separate function.
-    /*switch (body.action) {
-        case "toggleSwitchesBulk":
-            // Bulk switch toggle.
-            if (typeof body.switches === 'undefined' || !Array.isArray(body.switches)) {
-                // Either switches is undefined, or is not an array.
-                return res.status(400).send({
-                    success: false,
-                    error: 'Switches was either not provided, or is not an array.'
-                })
-            }
-
-            // Validate body with Joi
-            try {
-                await toggleSwitchesBulkSchema.validateAsync(body)
-
-                let switchActions = []
-                body.switches.forEach(switchEl => {
-                    switchActions.push(toggleSwitch(switchEl.ip, switchEl.port))
-                })
-
-                const results = await Promise.allSettled(switchActions)
-                return res.send({
-                    success: true,
-                    data: results
-                })
-            } catch (error) {
-                return res.status(400).send({
-                    success: false,
-                    error: error.message
-                })
-            }
-        default:
-            return res.status(400).send({
-                success: false,
-                error: 'Action is not valid.'
-            })
-    }*/
+app.get('(/*)?', async (req, res) => {
+    res.sendFile(join(frontBuild, 'index.html'))
 })
 
 switches.every(async el => {
