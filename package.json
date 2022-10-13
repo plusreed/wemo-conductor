@@ -1,7 +1,7 @@
 {
   "name": "wemo-conductor",
   "author": "Reed Davenport <reed@plusreed.com>",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "server.js",
   "license": "MIT",
   "dependencies": {
@@ -9,7 +9,6 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "joi": "^17.5.0",
-    "pug": "^3.0.2",
     "xml2js": "^0.4.23",
     "xmlbuilder": "^15.1.1"
   },

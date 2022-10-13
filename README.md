@@ -21,7 +21,7 @@ Wemo Conductor is an open-source web control panel for Wemo Smart Plugs.
 
 ## Screenshots
 
-![Screenshot of the Wemo Conductor dashboard](.github/wemo-conductor-home.png)
+> New screenshots coming soon.
 
 ## License
 

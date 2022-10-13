@@ -6,8 +6,6 @@ const { normalize, join } = require('path')
 const cors = require('cors')
 const app = express()
 
-app.set('view engine', 'pug')
-
 const frontBuild = normalize(join(__dirname, './frontend'))
 
 app.use(express.json())
@@ -15,13 +13,6 @@ app.use(express.static(frontBuild))
 app.use(cors())
 
 app.use('/api/v1', require('./react-apis'))
-
-app.get('/', async (req, res) => {
-    res.render('conductor_home', {
-        title: 'Wemo Conductor',
-        endpoints: switches
-    })
-})
 
 app.post('/api/wemo-action', async (req, res) => {
     const body = req.body
